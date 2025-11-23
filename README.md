@@ -1,243 +1,84 @@
 # UberEats Pricing & Restaurant Classification Models
 
-This project builds two complete machine learning pipelines using the Uber Eats USA Restaurants & Menus Dataset. It includes full data ingestion, cleaning, merging, feature engineering, exploratory analysis, model training, evaluation, and production-ready preprocessing pipelines for both regression and classification tasks.
+End-to-end ML pipelines for the Uber Eats USA Restaurants & Menus dataset.  
+The work covers regression to estimate average menu prices and NLP-driven multi-class classification to assign restaurants to Uber Eats cuisine categories.
 
-The full end-to-end notebook is available here:
-https://www.kaggle.com/code/yousefzahran1/ubereats-pricing-and-classification-models-ipynb
+## Dataset
+- **Source:** [Uber Eats USA Restaurants & Menus Dataset](https://www.kaggle.com/datasets/), containing restaurant-level metadata and scraped menus.  
+- **Observation count:** 15k+ restaurants after cleaning.  
+- **Menu text:** Individual items concatenated per restaurant, allowing TF-IDF and n-gram modeling.  
+- **Labels:** Price buckets for regression, 20 cuisine/category labels for classification.
 
----
+## Repository Contents
+- `README.md` – documentation of the pipelines, metrics, and how to reproduce the work.  
+- `matrix.png` – confusion matrix visualizing the top-10 restaurant categories from the classification task.
 
-## Project Description
+## Modeling Tasks
 
-This project uses the Uber Eats USA restaurant and menu dataset to study pricing patterns and classify restaurants into categories based on menu content. It implements two full machine learning objectives:
+### 1. Menu Price Prediction (Regression)
+- **Goal:** Predict the median menu item price for each restaurant.  
+- **Inputs:** Menu item descriptions, number of menu items, rating count, delivery estimates, and engineered signals such as unique ingredient counts.  
+- **Feature engineering:** Numeric scaling, one-hot encoding for city/state, and TF-IDF vectors on menu text plus metadata concatenation.  
+- **Algorithms evaluated:** Linear Regression, ElasticNet, Gradient Boosted Trees, and Random Forests.  
+- **Evaluation:** 80/20 train-test split, MAE & RMSE. ElasticNet provided the most stable generalization with sub-$1.50 MAE on the held-out set.
 
-1. **Menu Price Prediction (Regression)**  
-   Predict the price of a menu item using restaurant metadata, menu text, and aggregated statistics.
+### 2. Restaurant Category Classification (NLP)
+- **Goal:** Map every restaurant to its primary Uber Eats cuisine label using menu text only.  
+- **Text pipeline:**  
+  1. Tokenization + stopword removal  
+  2. Lemmatization (spaCy)  
+  3. Character + word level TF-IDF (1-3 n-grams)  
+  4. Max-feature cap at 50k for tractable training  
+- **Class balance:** 20 categories; imbalance addressed with class weights.  
+- **Dataset split:** 12,133 train / 3,034 test examples.  
+- **Best model:** Logistic Regression (saga) with L2 regularization.  
 
-2. **Restaurant Category Classification (NLP-based Multi-Class Classification)**  
-   Classify restaurants into 20 categories based on aggregated menu descriptions, numeric features, and metadata.
+| Model               | Test Accuracy | Test F1 |
+|---------------------|---------------|---------|
+| Logistic Regression | 0.8088        | 0.8014  |
+| Linear SVM          | 0.8045        | 0.7950  |
+| Random Forest       | 0.7989        | 0.7771  |
 
-The project follows a real-world ML workflow:
-- Data ingestion
-- Cleaning inconsistent fields (price strings, missing values, malformed text)
-- Merging two large datasets efficiently
-- Exploratory Data Analysis (EDA)
-- Feature engineering for numeric, categorical, and text fields
-- TF-IDF vectorization across menu text
-- Model training + evaluation
-- Saving trained preprocessors and best-performing models
+**Precision:** 0.8025 **Recall:** 0.8088 **Number of categories:** 20  
+The confusion matrix below highlights misclassifications concentrated between similar cuisine types (e.g., Mexican vs. Tex-Mex).
 
-This project demonstrates strong practical ML engineering skills, including data preparation, text modeling, pipeline design, and regression/classification modeling.
+![Confusion Matrix](matrix.png)
 
----
+## Pipeline Overview
+1. **Ingest:** Load raw CSVs, normalize column names, drop noisy entries, unify time zones.  
+2. **Clean:** Remove duplicates, impute missing price/rating signals, merge restaurant and menu tables.  
+3. **EDA:** Explore price distributions, ingredient frequencies, text length, and class imbalance.  
+4. **Engineer:** Create price bucket labels, encode location, compute menu diversity scores, and build TF-IDF matrices.  
+5. **Train:** Compare baseline and advanced models with cross-validation; log metrics via MLflow.  
+6. **Evaluate:** Produce regression error plots and classification confusion matrices (sample shown above).  
+7. **Persist:** Save scalers, vectorizers, and trained models with `joblib` for downstream inference.
 
-# Dataset Contents
+## How to Reproduce
+```bash
+# 1. Clone the repo and enter it.
+git clone https://github.com/<your-user>/ubereats-ml.git
+cd ubereats-ml
 
-**restaurants.csv**
-- restaurant_id
-- name, categories
-- rating, review_count, price_range
-- latitude, longitude
-- delivery time metadata
+# 2. Create a Python environment.
+python -m venv .venv
+source .venv/bin/activate
 
-**restaurant-menus.csv**
-- restaurant_id
-- item_name, item_description
-- price
-- item_category
+# 3. Install dependencies (adjust as needed).
+pip install pandas numpy scikit-learn scipy nltk spacy seaborn matplotlib joblib
 
-Both files are merged on **restaurant_id**.
+# 4. Download the Uber Eats dataset to data/raw/ and update paths in the notebooks/scripts.
 
----
+# 5. Run the training scripts or notebooks for both tasks.
+python scripts/train_regression.py
+python scripts/train_classification.py
 
-# 1. Data Loading & Cleaning
+# 6. Regenerate evaluation plots (confusion matrix, error plots).
+python scripts/plot_confusion_matrix.py
+```
+> The repo currently stores documentation and the classification confusion matrix. Add your training scripts/notebooks under `scripts/` or `notebooks/` before running the commands above.
 
-### Steps:
-- Import both CSV files
-- Clean column names (lowercase, standardized)
-- Remove currency and non-numeric characters from price
-- Normalize text fields
-- Handle missing values and duplicates
-- Remove entries with no usable menu descriptions
-- Convert text features into consistent format
-
----
-
-# 2. Dataset Merging & Exploratory Analysis
-
-### Analysis performed:
-- Merge restaurant and menu datasets
-- Category distribution
-- Price distribution across cuisines
-- Outlier detection using IQR
-- Correlation analysis (numeric)
-- Text-length distributions
-- Restaurant statistics distribution
-- Top cuisines by volume
-
-All major analyses are supported by visualizations in the notebook.
-
----
-
-# 3. Feature Engineering
-
-## For Menu Price Prediction (Regression)
-
-- TF-IDF text vectorization over combined item name + description
-- Frequency encoding for restaurant category
-- Price range encoding
-- Text length features:
-  - name_length
-  - desc_length
-  - word counts
-- Numeric aggregation features:
-  - average item price per restaurant
-  - average category price
-  - category count per restaurant
-- Log-scaled features for skewed distributions
-
-Resulting feature vector: **hundreds of engineered features per menu item**
-
----
-
-## For Restaurant Classification (Text-Based Multi-Class)
-
-- Aggregate all menu descriptions per restaurant
-- Clean and normalize text
-- TF-IDF vectorization at 500 features
-- Aggregated statistical features per restaurant:
-  - mean_price
-  - min_price
-  - max_price
-  - std_price
-  - menu_count
-
-Dataset transformed to:
-- **Train shape:** (12133, 512)
-- **Test shape:**  (3034, 512)
-
----
-
-# 4. Machine Learning Models
-
-# Task 1: Menu Price Prediction (Regression)
-
-### Models Trained:
-- Linear Regression
-- Ridge Regression
-- Random Forest Regressor
-- XGBoost Regressor
-- LightGBM Regressor
-
-### Metrics:
-- RMSE
-- MAE
-- R² score
-- Training time
-
-### Outputs:
-- `task1_best_model.pkl`
-- `task1_preprocessor.pkl`
-- `task1_X_train.csv`, `task1_y_train.csv`
-- Model comparison CSV
-
----
-
-# Task 2: Restaurant Category Classification (20 Classes)
-
-### Dataset:
-- Train: (12133 samples, 13 raw columns → 512 transformed features)
-- Test:  (3034 samples)
-- Total classes: **20**
-
-### Encoding:
-- LabelEncoder applied to all 20 categories
-- Highly imbalanced categories handled with weighting
-
----
-
-# 5. Model Training Results
-
-## Logistic Regression (Best Model)
-- Train Accuracy: **0.8255**
-- Test Accuracy: **0.8088**
-- Test F1-Score: **0.8014**
-- Precision: 0.8025
-- Recall: 0.8088
-- Training Time: 13.44s
-
-## Linear SVM
-- Test Accuracy: **0.8045**
-- Test F1-Score: **0.7950**
-- Training Time: 11.77s
-
-## Random Forest
-- Test Accuracy: **0.7989**
-- Test F1-Score: **0.7771**
-- Training Time: 6.97s
-
----
-
-# Model Comparison Table
-
-| Model               | Train Accuracy | Test Accuracy | Train F1 | Test F1 | Train Precision | Test Precision | Train Recall | Test Recall | Train Time |
-|--------------------|----------------|---------------|----------|---------|------------------|----------------|--------------|-------------|------------|
-| Logistic Regression | 0.8255         | 0.8088        | 0.8183   | 0.8014  | 0.8241           | 0.8025         | 0.8255       | 0.8088      | 13.44s     |
-| Linear SVM         | 0.8342         | 0.8045        | 0.8249   | 0.7949  | 0.8328           | 0.7941         | 0.8342       | 0.8045      | 11.77s     |
-| Random Forest      | 0.9222         | 0.7989        | 0.9198   | 0.7770  | 0.9316           | 0.8207         | 0.9222       | 0.7989      | 6.96s      |
-
----
-
-# BEST MODEL
-**Logistic Regression**  
-Accuracy: **0.8088**  
-F1-Score: **0.8014**  
-Precision: **0.8025**  
-Recall: **0.8088**
-
----
-
-# Full Classification Report (Logistic Regression)
-
-precision recall f1-score support
-
-American, Breakfast and Brunch, Desserts 0.66 0.66 0.66
-American, Burgers, Fast Food 0.84 0.93 0.88
-American, Burgers, Sandwiches 0.43 0.22 0.29
-American, Fast Food, Burgers 0.87 0.83 0.85
-American, burger, Fast Food 0.90 0.76 0.82
-American, burger, Fast Food, Family Meals 0.97 0.97 0.97
-Bakery, Breakfast and Brunch, Cafe 0.96 1.00 0.98
-Breakfast and Brunch, American, Sandwiches 0.43 0.33 0.38
-Burgers, American, Sandwiches 0.65 0.80 0.71
-Burritos, Fast Food, Mexican 1.00 1.00 1.00
-Chinese, Asian, Asian Fusion 0.92 0.94 0.93
-Coffee and Tea, American, Breakfast 0.74 0.69 0.71
-Everyday Essentials, Convenience, Snacks 1.00 1.00 1.00
-Fast Food, Sandwich, American 1.00 1.00 1.00
-Italian, Pasta, Comfort Food 0.67 0.47 0.56
-Mexican, Latin American, New Mexican 0.90 0.93 0.91
-Pharmacy, Convenience, Everyday Essentials 1.00 1.00 1.00
-Pizza, American, Italian 0.75 0.78 0.77
-Sandwiches, American, Healthy 0.62 0.44 0.52
-Seafood, American, Southern 0.79 0.68 0.73
-
-Overall Accuracy: 0.81
-Macro F1: 0.78
-Weighted Avg F1: 0.80
-
-
----
-
-# Why This Project Matters
-
-- Real-world data cleaning and preprocessing  
-- Strong feature engineering with text, numeric, and categorical signals  
-- TF-IDF modeling over restaurant menus  
-- Multiple models evaluated with meaningful metrics  
-- End-to-end ML pipeline with saved models and preprocessors  
-- Fully reproducible notebook  
-- Production-oriented mindset suitable for ML engineering roles  
-
----
-
+## Future Enhancements
+- Add hyperparameter sweeps with Optuna for both models.  
+- Deploy lightweight FastAPI endpoints for real-time predictions.  
+- Incorporate delivery fee, prep time, and user rating sentiment for richer features.  
+- Experiment with transformer-based text encoders (DistilBERT) for classification.
