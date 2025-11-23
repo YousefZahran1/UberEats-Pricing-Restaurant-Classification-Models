@@ -34,25 +34,25 @@ This project demonstrates strong practical ML engineering skills, including data
 # Dataset Contents
 
 **restaurants.csv**
-- restaurant_id
-- name, categories
-- rating, review_count, price_range
-- latitude, longitude
-- delivery time metadata
+- restaurant_id (unique identifier)
+- restaurant_name, restaurant_categories
+- customer_rating, customer_review_count, restaurant_price_range
+- restaurant_latitude, restaurant_longitude
+- estimated_delivery_time_metadata
 
 **restaurant-menus.csv**
-- restaurant_id
-- item_name, item_description
-- price
-- item_category
+- restaurant_id (foreign key linking to restaurants.csv)
+- menu_item_name, menu_item_description
+- menu_item_price
+- menu_item_category
 
 Both files are merged on **restaurant_id**.
 
 ---
 
-# 1. Data Loading & Cleaning
+# 1. Data Ingestion, Loading & Cleaning Process
 
-### Steps:
+### Data Cleaning Steps:
 - Import both CSV files
 - Clean column names (lowercase, standardized)
 - Remove currency and non-numeric characters from price
@@ -63,9 +63,9 @@ Both files are merged on **restaurant_id**.
 
 ---
 
-# 2. Dataset Merging & Exploratory Analysis
+# 2. Multi-Dataset Merging & Exploratory Data Analysis
 
-### Analysis performed:
+### Exploratory Data Analysis Performed:
 - Merge restaurant and menu datasets
 - Category distribution
 - Price distribution across cuisines
@@ -81,36 +81,36 @@ All major analyses are supported by visualizations in the notebook.
 
 # 3. Feature Engineering
 
-## For Menu Price Prediction (Regression)
+## Feature Engineering for Menu Item Price Prediction (Regression Pipeline)
 
 - TF-IDF text vectorization over combined item name + description
 - Frequency encoding for restaurant category
 - Price range encoding
 - Text length features:
-  - name_length
-  - desc_length
-  - word counts
+  - item_name_character_length
+  - item_description_character_length
+  - word_count_per_description
 - Numeric aggregation features:
-  - average item price per restaurant
-  - average category price
-  - category count per restaurant
+  - restaurant_average_item_price
+  - category_average_price
+  - items_count_per_restaurant_category
 - Log-scaled features for skewed distributions
 
 Resulting feature vector: **hundreds of engineered features per menu item**
 
 ---
 
-## For Restaurant Classification (Text-Based Multi-Class)
+## Feature Engineering for Restaurant Classification (Text-Based Multi-Class Classification Pipeline)
 
 - Aggregate all menu descriptions per restaurant
 - Clean and normalize text
 - TF-IDF vectorization at 500 features
 - Aggregated statistical features per restaurant:
-  - mean_price
-  - min_price
-  - max_price
-  - std_price
-  - menu_count
+  - restaurant_mean_menu_item_price
+  - restaurant_min_menu_item_price
+  - restaurant_max_menu_item_price
+  - restaurant_price_standard_deviation
+  - restaurant_total_menu_items_count
 
 Dataset transformed to:
 - **Train shape:** (12133, 512)
@@ -120,45 +120,45 @@ Dataset transformed to:
 
 # 4. Machine Learning Models
 
-# Task 1: Menu Price Prediction (Regression)
+# Machine Learning Pipeline 1: Menu Item Price Prediction (Regression)
 
-### Models Trained:
+### Regression Models Trained and Evaluated:
 - Linear Regression
 - Ridge Regression
 - Random Forest Regressor
 - XGBoost Regressor
 - LightGBM Regressor
 
-### Metrics:
+### Regression Evaluation Metrics:
 - RMSE
 - MAE
 - R² score
 - Training time
 
 ### Outputs:
-- `task1_best_model.pkl`
-- `task1_preprocessor.pkl`
-- `task1_X_train.csv`, `task1_y_train.csv`
-- Model comparison CSV
+- `price_prediction_best_model.pkl`
+- `price_prediction_preprocessor.pkl`
+- `price_prediction_X_train_features.csv`, `price_prediction_y_train_labels.csv`
+- `price_prediction_model_comparison.csv`
 
 ---
 
-# Task 2: Restaurant Category Classification (20 Classes)
+# Machine Learning Pipeline 2: Restaurant Multi-Category Classification (20 Classes)
 
-### Dataset:
+### Training and Test Dataset Specifications:
 - Train: (12133 samples, 13 raw columns → 512 transformed features)
 - Test:  (3034 samples)
 - Total classes: **20**
 
-### Encoding:
+### Label Encoding and Class Balancing Strategy:
 - LabelEncoder applied to all 20 categories
 - Highly imbalanced categories handled with weighting
 
 ---
 
-# 5. Model Training Results
+# 5. Classification Model Training Results and Performance Metrics
 
-## Logistic Regression (Best Model)
+## Logistic Regression Classification Model (Best Performing Model)
 - Train Accuracy: **0.8255**
 - Test Accuracy: **0.8088**
 - Test F1-Score: **0.8014**
@@ -166,21 +166,21 @@ Dataset transformed to:
 - Recall: 0.8088
 - Training Time: 13.44s
 
-## Linear SVM
+## Linear Support Vector Machine Classification Model
 - Test Accuracy: **0.8045**
 - Test F1-Score: **0.7950**
 - Training Time: 11.77s
 
-## Random Forest
+## Random Forest Classification Model
 - Test Accuracy: **0.7989**
 - Test F1-Score: **0.7771**
 - Training Time: 6.97s
 
 ---
 
-# Model Comparison Table
+# Multi-Model Performance Comparison Table
 
-| Model               | Train Accuracy | Test Accuracy | Train F1 | Test F1 | Train Precision | Test Precision | Train Recall | Test Recall | Train Time |
+| Classification Model | Training Accuracy | Testing Accuracy | Training F1-Score | Testing F1-Score | Training Precision | Testing Precision | Training Recall | Testing Recall | Model Training Time |
 |--------------------|----------------|---------------|----------|---------|------------------|----------------|--------------|-------------|------------|
 | Logistic Regression | 0.8255         | 0.8088        | 0.8183   | 0.8014  | 0.8241           | 0.8025         | 0.8255       | 0.8088      | 13.44s     |
 | Linear SVM         | 0.8342         | 0.8045        | 0.8249   | 0.7949  | 0.8328           | 0.7941         | 0.8342       | 0.8045      | 11.77s     |
@@ -188,16 +188,16 @@ Dataset transformed to:
 
 ---
 
-# BEST MODEL
-**Logistic Regression**  
-Accuracy: **0.8088**  
-F1-Score: **0.8014**  
-Precision: **0.8025**  
-Recall: **0.8088**
+# BEST PERFORMING CLASSIFICATION MODEL
+**Logistic Regression Classification Model**  
+Testing Accuracy: **0.8088**  
+Testing F1-Score: **0.8014**  
+Testing Precision: **0.8025**  
+Testing Recall: **0.8088**
 
 ---
 
-# Full Classification Report (Logistic Regression)
+# Full Detailed Classification Report (Logistic Regression Model)
 
 precision recall f1-score support
 
@@ -229,7 +229,7 @@ Weighted Avg F1: 0.80
 
 ---
 
-# Why This Project Matters
+# Project Value and Key Technical Achievements
 
 - Real-world data cleaning and preprocessing  
 - Strong feature engineering with text, numeric, and categorical signals  
