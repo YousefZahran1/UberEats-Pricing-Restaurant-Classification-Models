@@ -1,0 +1,15 @@
+version: "3.10"
+services:
+  api:
+    build: .
+    image: kandidate:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - KANDIDATE_LOGGING__LEVEL=INFO
+      - KANDIDATE_REPOSITORY__PATH=/data/results.json
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/data
+    command: ["uvicorn", "kandidate.services.api:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+volumes: {}
