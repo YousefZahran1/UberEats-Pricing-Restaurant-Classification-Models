@@ -1,84 +1,47 @@
 # UberEats Pricing & Restaurant Classification Models
 
-End-to-end ML pipelines for the Uber Eats USA Restaurants & Menus dataset.  
-The work covers regression to estimate average menu prices and NLP-driven multi-class classification to assign restaurants to Uber Eats cuisine categories.
+This project builds two complete machine learning pipelines using the Uber Eats USA Restaurants & Menus Dataset.
+It includes full preprocessing, feature engineering, model training, evaluation, and visualization—including the confusion matrix below.
 
-## Dataset
-- **Source:** [Uber Eats USA Restaurants & Menus Dataset](https://www.kaggle.com/datasets/), containing restaurant-level metadata and scraped menus.  
-- **Observation count:** 15k+ restaurants after cleaning.  
-- **Menu text:** Individual items concatenated per restaurant, allowing TF-IDF and n-gram modeling.  
-- **Labels:** Price buckets for regression, 20 cuisine/category labels for classification.
-
-## Repository Contents
-- `README.md` – documentation of the pipelines, metrics, and how to reproduce the work.  
-- `matrix.png` – confusion matrix visualizing the top-10 restaurant categories from the classification task.
-
-## Modeling Tasks
-
-### 1. Menu Price Prediction (Regression)
-- **Goal:** Predict the median menu item price for each restaurant.  
-- **Inputs:** Menu item descriptions, number of menu items, rating count, delivery estimates, and engineered signals such as unique ingredient counts.  
-- **Feature engineering:** Numeric scaling, one-hot encoding for city/state, and TF-IDF vectors on menu text plus metadata concatenation.  
-- **Algorithms evaluated:** Linear Regression, ElasticNet, Gradient Boosted Trees, and Random Forests.  
-- **Evaluation:** 80/20 train-test split, MAE & RMSE. ElasticNet provided the most stable generalization with sub-$1.50 MAE on the held-out set.
-
-### 2. Restaurant Category Classification (NLP)
-- **Goal:** Map every restaurant to its primary Uber Eats cuisine label using menu text only.  
-- **Text pipeline:**  
-  1. Tokenization + stopword removal  
-  2. Lemmatization (spaCy)  
-  3. Character + word level TF-IDF (1-3 n-grams)  
-  4. Max-feature cap at 50k for tractable training  
-- **Class balance:** 20 categories; imbalance addressed with class weights.  
-- **Dataset split:** 12,133 train / 3,034 test examples.  
-- **Best model:** Logistic Regression (saga) with L2 regularization.  
-
-| Model               | Test Accuracy | Test F1 |
-|---------------------|---------------|---------|
-| Logistic Regression | 0.8088        | 0.8014  |
-| Linear SVM          | 0.8045        | 0.7950  |
-| Random Forest       | 0.7989        | 0.7771  |
-
-**Precision:** 0.8025 **Recall:** 0.8088 **Number of categories:** 20  
-The confusion matrix below highlights misclassifications concentrated between similar cuisine types (e.g., Mexican vs. Tex-Mex).
+## Confusion Matrix (Top 10 Classes)
 
 ![Confusion Matrix](matrix.png)
 
-## Pipeline Overview
-1. **Ingest:** Load raw CSVs, normalize column names, drop noisy entries, unify time zones.  
-2. **Clean:** Remove duplicates, impute missing price/rating signals, merge restaurant and menu tables.  
-3. **EDA:** Explore price distributions, ingredient frequencies, text length, and class imbalance.  
-4. **Engineer:** Create price bucket labels, encode location, compute menu diversity scores, and build TF-IDF matrices.  
-5. **Train:** Compare baseline and advanced models with cross-validation; log metrics via MLflow.  
-6. **Evaluate:** Produce regression error plots and classification confusion matrices (sample shown above).  
-7. **Persist:** Save scalers, vectorizers, and trained models with `joblib` for downstream inference.
+## Project Description
+This project uses the Uber Eats USA restaurant and menu dataset to study pricing patterns and classify restaurants into categories based on menu content.
 
-## How to Reproduce
-```bash
-# 1. Clone the repo and enter it.
-git clone https://github.com/<your-user>/ubereats-ml.git
-cd ubereats-ml
+Two ML tasks are included:
 
-# 2. Create a Python environment.
-python -m venv .venv
-source .venv/bin/activate
+1. **Menu Price Prediction** — Regression  
+2. **Restaurant Category Classification** — Text-based multi-class classification over 20 categories  
 
-# 3. Install dependencies (adjust as needed).
-pip install pandas numpy scikit-learn scipy nltk spacy seaborn matplotlib joblib
+The workflow includes:
+- Data ingestion  
+- Cleaning & standardization  
+- Merging datasets  
+- Full EDA  
+- Feature engineering  
+- TF‑IDF text vectorization  
+- Model comparisons  
+- Saving models and preprocessors  
 
-# 4. Download the Uber Eats dataset to data/raw/ and update paths in the notebooks/scripts.
+## Task 2 Results Summary
 
-# 5. Run the training scripts or notebooks for both tasks.
-python scripts/train_regression.py
-python scripts/train_classification.py
+**Train set:** 12133  
+**Test set:** 3034  
+**Number of categories:** 20  
 
-# 6. Regenerate evaluation plots (confusion matrix, error plots).
-python scripts/plot_confusion_matrix.py
-```
-> The repo currently stores documentation and the classification confusion matrix. Add your training scripts/notebooks under `scripts/` or `notebooks/` before running the commands above.
+### Best Model: Logistic Regression
+- Test Accuracy: 0.8088  
+- F1‑Score: 0.8014  
+- Precision: 0.8025  
+- Recall: 0.8088  
 
-## Future Enhancements
-- Add hyperparameter sweeps with Optuna for both models.  
-- Deploy lightweight FastAPI endpoints for real-time predictions.  
-- Incorporate delivery fee, prep time, and user rating sentiment for richer features.  
-- Experiment with transformer-based text encoders (DistilBERT) for classification.
+### Model Comparison
+| Model               | Test Accuracy | Test F1 |
+|--------------------|--------------|---------|
+| Logistic Regression | 0.8088       | 0.8014  |
+| Linear SVM         | 0.8045       | 0.7950  |
+| Random Forest      | 0.7989       | 0.7771  |
+
+The Logistic Regression classifier provides the strongest generalization across all 20 restaurant categories.
