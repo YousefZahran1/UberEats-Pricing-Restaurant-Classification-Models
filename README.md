@@ -3,6 +3,8 @@
 This project builds two complete machine learning pipelines using the Uber Eats USA Restaurants & Menus Dataset.
 It includes full preprocessing, feature engineering, model training, evaluation, and visualization—including the confusion matrix below.
 
+# The link
+https://www.kaggle.com/code/yousefzahran1/ubereats-pricing-and-classification-models-ipynb?scriptVersionId=281161887&cellId=12
 ## Confusion Matrix (Top 10 Classes)
 
 ![Confusion Matrix](matrix.png)
